@@ -1,3 +1,6 @@
+// Simsv-Software(https://github.com/Simsv-Software/)版权所有
+// 本扩展基于SimMusic-NCM-Ext(https://github.com/Simsv-Software/SimMusic-NCM-Ext/)开发
+// 本扩展与原扩展同样使用MIT协议开源
 "use strict";
 const os = require("os");
 const path = require("path");
