@@ -220,9 +220,9 @@ async function request(path2, query = {}) {
         headersConf.split("&").map((it) => it.split("=")).forEach((it) => {
             if (decodeURIComponent(decodeURI(it[0])) == "cookie") {
                 if (path2.indexOf('?') !== -1) {
-                    path2 = "&" + decodeURIComponent(decodeURI(it[1]));
+                    path2 = path2 + "&" + decodeURIComponent(decodeURI(it[1]));
                 } else {
-                    path2 = "?" + decodeURIComponent(decodeURI(it[1]));
+                    path2 = path2 + "?" + decodeURIComponent(decodeURI(it[1]));
                 }
             }
             headers[decodeURIComponent(decodeURI(it[0]))] = decodeURIComponent(decodeURI(it[1]));
