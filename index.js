@@ -277,10 +277,7 @@ function getBr() {
 }
 ExtensionConfig.ncm = {
     async readMetadata(path2) {
-        const id = path2.substring(
-
-            4
-        );
+        const id = "ncm".length + 1;
         if (cachedMetadata[id]) {
             return cachedMetadata[id];
         }
@@ -288,10 +285,7 @@ ExtensionConfig.ncm = {
     },
     player: {
         async getPlayUrl(path2, isDownload, count = 0) {
-            const id = path2.substring(
-
-                4
-            );
+            const id = "ncm".length + 1;
             const cached = getCache(id);
             if (cached) {
                 return "file://" + cached;
@@ -316,10 +310,7 @@ ExtensionConfig.ncm = {
             return url;
         },
         async getLyrics(path2) {
-            const id = path2.substring(
-
-                4
-            );
+            const id =  "ncm".length + 1;
             if (cachedLyrics[id]) {
                 return cachedLyrics[id];
             }
