@@ -216,24 +216,34 @@ if (localStorage.getItem("ext.ncm.clearCache") == "1") {
     localStorage.removeItem("ext.ncm.clearCache");
 }
 async function request(path2, query = {}) {
-    const formatted = Object.keys(query).map((k) => encodeURI(k) + "=" + encodeURI(query[k])).join("&");
-    const headers = {};
+    const formattedQuery = new URLSearchParams(query).toString();
+    let headers = {};
     const headersConf = config.getItem("ext.ncm.apiHeaders");
     if (headersConf) {
-        headersConf.split("&").map((it) => it.split("=")).forEach((it) => {
-            if (decodeURIComponent(decodeURI(it[0])) == "cookie") {
-                if (path2.indexOf('?') !== -1) {
-                    path2 = path2 + "&" + decodeURIComponent(decodeURI(it[1]));
-                } else {
-                    path2 = path2 + "?" + decodeURIComponent(decodeURI(it[1]));
-                }
-            }
-            headers[decodeURIComponent(decodeURI(it[0]))] = decodeURIComponent(decodeURI(it[1]));
-        });
+        headers = headersConf.split('&').reduce((acc, headerPair) => {
+            const [key, value] = headerPair.split('=');
+            acc[key] = value;
+            return acc;
+        }, {});
     }
-    const resp = await fetch(config.getItem("ext.ncm.apiEndpoint") + path2 + "?" + formatted, { headers });
-    return await resp.json();
-}
+    if (headers.cookie && path2.indexOf('?') === -1) {
+        path2 += `?${headers.cookie}`;
+        delete headers.cookie;
+    } else if (headers.cookie) {
+        path2 += `&${headers.cookie}`;
+        delete headers.cookie;
+    }
+
+    try {
+        const response = await fetch(`${config.getItem("ext.ncm.apiEndpoint")}${path2}?${formattedQuery}`, {
+            headers: new Headers(headers)
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to fetch:', error);
+        throw error;
+    }
+
 function splitArray(arr, chunkSize) {
     const result = [];
     for (let i = 0; i < arr.length; i += chunkSize) {
