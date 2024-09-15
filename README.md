@@ -17,5 +17,6 @@
 
 ## 特别提示&鸣谢
 *本扩展基于Simsv-Software/SimMusic-NCM-Ext编译后文件修改，已经过原作者（Xiaym）同意并在index.js标注了所有者信息  
-感谢XIAYM为本扩展提出修改建议
+感谢XIAYM为本扩展提出修改建议  
+SimMusic为本扩展提供开发平台
 
