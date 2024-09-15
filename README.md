@@ -1,5 +1,7 @@
 # neteaseSupport
-[SimMusic扩展]网易云播放+搜索+歌单支持扩展（基于SimSV官方开发扩展修复）
+[SimMusic扩展]网易云播放+搜索+歌单支持扩展（基于SimSV官方开发扩展修复）  
+此项目基于[SimMusic-NCM-Ext](https://github.com/Simsv-Software/SimMusic-NCM-Ext/)  
+已获得开发者批准
 
 ## 扩展截图
 
