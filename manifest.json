@@ -1,1 +1,9 @@
-{"extName":"NCM扩展（第三方修复）","uiName":"网易云","entries":["index.js"],"packageId":"ncm","version":"R-Alpha-0.0.7"}
+{
+    "extName": "NCM扩展（第三方修复）",
+    "uiName": "网易云",
+    "entries": [
+        "index.js"
+    ],
+    "packageId": "ncm",
+    "version": "r0.0.9"
+}

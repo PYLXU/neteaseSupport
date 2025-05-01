@@ -5,6 +5,7 @@
 const os = require("os");
 const path = require("path");
 const fs = require("fs");
+let cloudSongList = [];
 function _interopNamespaceDefault(e) {
     const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
     if (e) {
@@ -171,13 +172,15 @@ Object.assign(defaultConfig, {
     "ext.ncm.formatLrc": true,
     "ext.ncm.maxParallelCount": 8,
     // Internal Data
-    "ext.ncm.musicList": []
+    "ext.ncm.musicList": [],
+    "ext.ncm.showCloudSongs": true,
 });
 SettingsPage.data.push(
     { type: "title", text: "网易云 NodeJS API 扩展" },
     { type: "input", text: "API 地址", description: "必填，无需最后的斜线（示例： https://api.example.com）。", configItem: "ext.ncm.apiEndpoint" },
     { type: "input", text: "要发送给 API 的 Header 信息", description: "选填，支持多个（格式：a=b&c=d，需要 URL 转义）。", configItem: "ext.ncm.apiHeaders" },
     { type: "input", inputType: "number", text: "搜索时每页歌曲数量", description: "必填，默认为 30，推荐不超过 50，不能超过 100。", configItem: "ext.ncm.searchLimit" },
+    { type: "boolean", text: "同时显示云盘结果", description: "开启后搜索中将包含在云盘中的歌曲", configItem: "ext.ncm.showCloudSongs" },
     { type: "boolean", text: "过滤无效歌曲", description: "开启后搜索结果中将过滤您无法播放的歌曲。", configItem: "ext.ncm.filterInvalid" },
     {
         type: "select",
@@ -215,34 +218,26 @@ if (localStorage.getItem("ext.ncm.clearCache") == "1") {
     initCache();
     localStorage.removeItem("ext.ncm.clearCache");
 }
-async function request(path2, query = {}) {
-    const formattedQuery = new URLSearchParams(query).toString();
+async function request(path, query = {}) {
+    const queryParams = new URLSearchParams(query).toString();
     let headers = {};
     const headersConf = config.getItem("ext.ncm.apiHeaders");
     if (headersConf) {
-        headers = headersConf.split('&').reduce((acc, headerPair) => {
-            const [key, value] = headerPair.split('=');
-            acc[key] = value;
-            return acc;
-        }, {});
-    }
-    if (headers.cookie && path2.indexOf('?') === -1) {
-        path2 += `?${headers.cookie}`;
-        delete headers.cookie;
-    } else if (headers.cookie) {
-        path2 += `&${headers.cookie}`;
-        delete headers.cookie;
-    }
-
-    try {
-        const response = await fetch(`${config.getItem("ext.ncm.apiEndpoint")}${path2}?${formattedQuery}`, {
-            headers: new Headers(headers)
+        headersConf.split('&').forEach(pair => {
+            const [key, value] = pair.split('=');
+            key && value && (headers[decodeURIComponent(key)] = decodeURIComponent(value));
         });
-        return await response.json();
-    } catch (error) {
-        console.error('Failed to fetch:', error);
-        throw error;
     }
+    if ('cookie' in headers) {
+        path += `?cookie=${encodeURIComponent(headers.cookie)}`;
+        delete headers.cookie;
+    } else {
+        path += `?`;
+    }
+    const url = `${config.getItem('ext.ncm.apiEndpoint')}${path}&${queryParams}`;
+    const response = await fetch(url, { headers });
+    return await response.json();
+}
 
 function splitArray(arr, chunkSize) {
     const result = [];
@@ -290,7 +285,7 @@ function getBr() {
 }
 ExtensionConfig.ncm = {
     async readMetadata(path2) {
-        const id = "ncm".length + 1;
+        const id = path2.substring(4);
         if (cachedMetadata[id]) {
             return cachedMetadata[id];
         }
@@ -298,7 +293,7 @@ ExtensionConfig.ncm = {
     },
     player: {
         async getPlayUrl(path2, isDownload, count = 0) {
-            const id = "ncm".length + 1;
+            const id = path2.substring(4);
             const cached = getCache(id);
             if (cached) {
                 return "file://" + cached;
@@ -323,7 +318,7 @@ ExtensionConfig.ncm = {
             return url;
         },
         async getLyrics(path2) {
-            const id =  "ncm".length + 1;
+            const id = path2.substring(4);
             if (cachedLyrics[id]) {
                 return cachedLyrics[id];
             }
@@ -357,6 +352,11 @@ ExtensionConfig.ncm = {
             cachedMetadata = await fetchMetadata(...ids);
             if (config.getItem("ext.ncm.filterInvalid")) {
                 ids = ids.filter((it) => playableMap[it]);
+            }
+            if (config.getItem('ext.ncm.showCloudSongs') == true) {
+                const cloudIds = cloudSongList.filter((it) => it.name.includes(keywords)).map((it) => it.id).concat(ids);
+                ids = cloudIds.concat(ids);
+                console.log(ids);
             }
             return {
                 files: ids.map((it) => "ncm:" + it),
@@ -492,3 +492,33 @@ ExtensionConfig.ncm = {
         }
     }
 };
+
+// 新增函数
+
+async function loadCloudSongList() {
+    if (config.getItem("ext.ncm.apiEndpoint") == "") return;
+    let count = await request("/user/cloud");
+    count = count.count;
+    const resp = await request("/user/cloud", {
+        limit: count
+    });
+    const songList = resp.data.map(song => ({
+        id: song.simpleSong.id,
+        name: song.simpleSong.ar.map(a => a.name).join(", ") + " - " + song.simpleSong.name
+    }));
+    console.log("云盘索引获取成功：");
+    console.log(songList);
+    cloudSongList = songList;
+}
+
+if (config.getItem("ext.ncm.showCloudSongs")) {
+    loadCloudSongList();
+}
+
+config.listenChange("ext.ncm.showCloudSongs", async () => {
+    if (config.getItem("ext.ncm.showCloudSongs")) {
+        loadCloudSongList();
+    } else {
+        cloudSongList = [];
+    }
+});
